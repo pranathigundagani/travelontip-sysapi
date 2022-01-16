@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="getschedules-travelontipFlow" doc:id="d0109e37-f547-4e39-86ad-630dda4b6074" >
+		<set-variable value="#[attributes.queryParams.destinationLocation]" doc:name="destination-travvelontip" doc:id="1e28d245-4187-400b-8683-4df628a8f584" variableName="destination"/>
+		<set-variable value="#[attributes.queryParams.departureLocation]" doc:name="departure-travelontip" doc:id="f1f4cf1a-e441-4204-97de-0267e6c4dba2" variableName="departure"/>
+		<choice doc:name="Choice" doc:id="9f435bd0-a99c-4c73-be12-d4fcb2e37f37" >
+			<when expression='#[attributes.uriParams.transportType == "land"]'>
+				<db:select doc:name="land" doc:id="22bc2525-bae3-42b0-aa1d-13f07bdb5d3c" config-ref="Database_Config">
+					<db:sql ><![CDATA[select * from travelontip.land where departureLocationCode=:departureLocationCode and destinationLocationCode=:destinationLocationCode]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{
+	"departureLocationCode": attributes.queryParams.departureLocation,
+	"destinationLocationCode": attributes.queryParams.destinationLocation
+}]]]></db:input-parameters>
+				</db:select>
+				<choice doc:name="Choice" doc:id="6563d369-9a38-46fe-8535-e14eb06690dc" >
+					<when expression='#[vars.destinationLocation !=null and vars.departureLocation !=null]'>
+						<choice doc:name="Choice" doc:id="1b7794cd-026f-4d9d-8195-20f4ddb496f1" >
+							<when expression="#[isEmpty(payload)]">
+								<ee:transform doc:name="Transform Message" doc:id="1dcf7d99-0618-46be-92fc-6677ae086a52" >
+									<ee:message >
+										<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+
+{
+	"message" : "routes are not available"
+}]]></ee:set-payload>
+									</ee:message>
+								</ee:transform>
+							</when>
+							<otherwise >
+								<ee:transform doc:name="Transform Message" doc:id="5024a4b2-3cc8-4f35-98df-17beb17907ef" >
+									<ee:message >
+										<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+
+ payload  map{
+    "avaiableSeats" : $.availableSeats,
+    "depatureTime": $.depatureTime,
+    "travelRoute": {
+        "destinationlocation": {
+            "locationcode" : $.destinationLocationCode
+        },
+         "originlocation":{
+             "locationcode": $.departureLocationCode
+         }
+    }
+}        ]]></ee:set-payload>
+									</ee:message>
+								</ee:transform>
+							</otherwise>
+						</choice>
+					</when>
+					<otherwise >
+						<ee:transform doc:name="Transform Message" doc:id="e58bcc58-c27d-477f-b840-edb1d869a3a4" >
+							<ee:message >
+								<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message": "No routes found for roadways"
+}]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+					</otherwise>
+				</choice>
+			</when>
+			<when expression='#[attributes.uriParams.transportType == "air"]'>
+				<db:select doc:name="air" doc:id="d8072e78-4a86-4bc1-970b-6836d29eae61" config-ref="Database_Config">
+					<db:sql ><![CDATA[select * from travelontip.air where departureLocationCode=:departureLocationCode and destinationLocationCode=:destinationLocationCode]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{
+	"departureLocationCode": attributes.queryParams.departureLocation,
+	"destinationLocationCode": attributes.queryParams.destinationLocation
+}]]]></db:input-parameters>
+				</db:select>
+				<choice doc:name="Choice" doc:id="818bb1a2-7557-47c0-aedf-fa37f77da44f" >
+					<when expression="#[vars.destinationLocation !=null and vars.departureLocation !=null]">
+						<choice doc:name="Choice" doc:id="c78072c6-3426-464e-a3e7-6398ba8924bb" >
+							<when expression="#[isEmpty(payload)]">
+								<ee:transform doc:name="Transform Message" doc:id="b71e63cc-1cfb-42ea-98b3-a29c800fbf7c" >
+									<ee:message >
+										<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message" : "routes are not available"
+}]]></ee:set-payload>
+									</ee:message>
+								</ee:transform>
+							</when>
+							<otherwise >
+								<ee:transform doc:name="Transform Message" doc:id="e10e668c-8826-483b-8624-ee9234a87de1" >
+									<ee:message >
+										<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+
+payload  map{
+    "availableSeats" : $.availableSeats,
+    "depatureTime": $.depatureTime,
+    "travelRoute": {
+        "destinationlocation": {
+            "locationcode" : $.destinationLocationCode
+        },
+         "originlocation":{
+             "locationcode": $.departureLocationCode
+         }
+    }
+}]]></ee:set-payload>
+									</ee:message>
+								</ee:transform>
+							</otherwise>
+						</choice>
+					</when>
+					<otherwise >
+						<ee:transform doc:name="Transform Message" doc:id="034f42b1-078c-47de-b98e-5200b21a91c4" >
+							<ee:message >
+								<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message": "No routes found for airways"
+}]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+					</otherwise>
+				</choice>
+			</when>
+			<when expression='#[attributes.uriParams.transportType == "sea"]'>
+				<db:select doc:name="Sea" doc:id="2b3d5ad1-763f-4d8c-9105-7798015fc3e9" config-ref="Database_Config">
+					<db:sql ><![CDATA[select * from travelontip.sea where departureLocationCode=:departureLocationCode and destinationLocationCode=:destinationLocationCode]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{
+	"departureLocationCode": attributes.queryParams.departureLocation,
+	"destinationLocationCode": attributes.queryParams.destinationLocation
+}]]]></db:input-parameters>
+				</db:select>
+				<choice doc:name="Choice" doc:id="cdab2736-3031-4b82-b2ee-0686df258b5b" >
+					<when expression="#[vars.destinationLocation !=null and vars.departureLocation !=null]">
+						<choice doc:name="Choice" doc:id="3e148e2e-afde-4d10-a95e-17024d242869" >
+							<when expression="#[isEmpty(payload)]">
+								<ee:transform doc:name="Transform Message" doc:id="d7023210-8d2d-4167-a69f-20a36c1edbac" >
+									<ee:message >
+										<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message" : "routes are not available"
+}
+]]></ee:set-payload>
+									</ee:message>
+								</ee:transform>
+							</when>
+							<otherwise >
+								<ee:transform doc:name="Transform Message" doc:id="f47b9684-b53e-4cd4-a13f-b3f1143abf66" >
+									<ee:message >
+										<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+
+payload  map{
+    "availableSeats" : $.availableSeats,
+    "depatureTime": $.depatureTime,
+    "travelRoute": {
+        "destinationlocation": {
+            "locationcode" : $.destinationLocationCode
+        },
+         "originlocation":{
+             "locationcode": $.departureLocationCode
+         }
+    }
+}]]></ee:set-payload>
+									</ee:message>
+								</ee:transform>
+							</otherwise>
+						</choice>
+					</when>
+					<otherwise >
+						<ee:transform doc:name="Transform Message" doc:id="8a6609e6-5c8d-47ff-814e-a719297ea5e3" >
+							<ee:message >
+								<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message": "No routes found for seaways"
+}]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+					</otherwise>
+				</choice>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="Transform Message" doc:id="8536b2d8-d739-4c1b-afca-86b13d0d89c0" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message": "No routes found"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+	</flow>
+</mule>
